@@ -1,42 +1,50 @@
 #!/bin/bash
 
 set -o pipefail
-shopt -s nullglob
 export PATH=/bin
 
-start() {
-  hostname repair
+case "$1" in
+  start | "")
+    hostname repair
+    ctrlaltdel soft
 
-  mount -m -t devtmpfs -o mode=0755,noexec devtmpfs /dev
-  mount -m -t devpts -o newinstance,noexec,ptmxmode=0666 devpts /dev/pts
-  mount -m -t proc -o nodev,noexec proc /proc
-  mount -m -t sysfs -o nodev,noexec sysfs /sys
+    mount -m -t devtmpfs -o mode=0755,noexec devtmpfs /dev
+    mount -m -t devpts -o newinstance,noexec,ptmxmode=0666 devpts /dev/pts
+    mount -m -t proc -o nodev,noexec proc /proc
+    mount -m -t sysfs -o nodev,noexec sysfs /sys
 
-  ln -f -n -s pts/ptmx /dev/ptmx
-  ln -f -n -s /proc/self/fd /dev/fd
-  ln -f -n -s fd/0 /dev/stdin
-  ln -f -n -s fd/1 /dev/stdout
-  ln -f -n -s fd/2 /dev/stderr
+    ln -f -n -s pts/ptmx /dev/ptmx
+    ln -f -n -s /proc/self/fd /dev/fd
+    ln -f -n -s fd/0 /dev/stdin
+    ln -f -n -s fd/1 /dev/stdout
+    ln -f -n -s fd/2 /dev/stderr
 
-  while read TTY _; do
-    TERM=vt102 setsid -c -f bash -l <>/dev/$TTY 1>&0 2>&1
-  done < /proc/consoles
+    dmesg --console-off
+    while read TTY _; do
+      TERM=vt102 setsid -c -f bash -l <>/dev/$TTY 1>&0 2>&1
+    done < /proc/consoles
 
-  trap 'exec "$0" stop reboot' INT
-  trap 'exec "$0" stop poweroff' TERM
+    exec "$0" reap
+    ;;
 
-  ctrlaltdel soft
-  while true; do read; done <><(:)
-}
+  stop)
+    sleep 1 && kill -TERM -1
+    sleep 1 && kill -KILL -1
+    echo && dmesg --console-on
 
-stop() {
-  kill -TERM -1 && sleep 2 && kill -KILL -1
-  if swapoff -a && umount -a -r -t norootfs; then
-    echo "Remounted filesystems read-only"
-  else
-    sync && echo "Flushed filesystem writes"
-  fi
-  exec stop "$@"
-}
+    if swapoff -a && umount -a -r -t norootfs; then
+      echo "Remounted filesystems read-only"
+    elif sync; then
+      echo "Flushed filesystem writes"
+    fi
 
-"${@:-start}"
+    exec stop "${@:2}"
+    ;;
+
+  *)
+    trap 'exec "$0" reap 3>&-' HUP
+    trap 'exec "$0" stop reboot 3>&-' INT
+    trap 'exec "$0" stop poweroff 3>&-' TERM
+    exec 3<><(:) && while true; do read -u 3; done
+    ;;
+esac
