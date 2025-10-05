@@ -9,8 +9,8 @@ set-option -add global ui_options terminal_synchronized=false
 
 add-highlighter global/window-wrap wrap
 
-map global insert <pageup> '<a-;><pageup>'
-map global insert <pagedown> '<a-;><pagedown>'
+map global insert <pageup> '<a-;><c-b>'
+map global insert <pagedown> '<a-;><c-f>'
 map global insert <a-b> '<a-;>b<a-;>;'
 map global insert <a-B> '<a-;><a-b><a-;>;'
 map global insert <a-d> '<a-;>w<a-;>d'
@@ -30,7 +30,6 @@ map global insert <c-k> '<a-;>;<a-;>Gl<a-;>d'
 map global insert <c-U> '<left><a-;>Gh<a-;>d'
 map global insert <c-w> '<a-;>b<a-;>d'
 map global insert <c-W> '<a-;><a-b><a-;>d'
-map global insert <c-y> '<a-;>P<right>'
 
 map global normal <#> ':comment-line<ret>'
 map global normal <home> 'gh'
@@ -41,5 +40,5 @@ map global normal <a-up> 'x<a-_>dhP'
 map global normal <a-down> 'x<a-_>dp'
 map global normal <a-home> 'Gh'
 map global normal <a-end> 'Gl'
-map global normal <s-pageup> 'Gt<c-u>'
-map global normal <s-pagedown> 'Gb<c-d>'
+map global normal <s-pageup> 'Gtvv'
+map global normal <s-pagedown> 'Gbvv'
